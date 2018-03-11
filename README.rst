@@ -23,11 +23,13 @@ Basic usage
 
 After installing the module, you have to load the extension using ``%load_ext iminizinc``. This will enable the cell magic ``%%minizinc``, which lets you solve MiniZinc models. Here is a simple example:
 
+.. code::
+
     In[1]:  %load_ext iminizinc
             
     In[2]:  n=8
             
-    In[3]:  %%minizinc gecode
+    In[3]:  %%minizinc
             
             include "globals.mzn";
             int: n;
@@ -42,3 +44,56 @@ After installing the module, you have to load the extension using ``%load_ext im
     Out[4]: [4, 2, 7, 3, 6, 8, 5, 1]
 
 As you can see, the model binds variables in the environment (in this case, ``n``) to MiniZinc parameters, and binds the variables in a solution (``queens``) back to Python variables.
+
+Alternatively, you can bind the solution to a python object, like this:
+
+.. code::
+
+    In[1]:  %load_ext iminizinc
+            
+    In[2]:  n=8
+            
+    In[3]:  %%minizinc -o solution
+            
+            include "globals.mzn";
+            int: n;
+            array[1..n] of var 1..n: queens;
+            constraint all_different(queens);
+            constraint all_different([queens[i]+i | i in 1..n]);
+            constraint all_different([queens[i]-i | i in 1..n]);
+            solve satisfy;
+            
+    In[4]:  solution
+    
+    Out[4]: {u'queens': [4, 2, 7, 3, 6, 8, 5, 1]}
+
+If you want to find all solutions of a satisfaction problem, or all intermediate solutions of an optimisation problem, you can use the ``-a`` flag:
+
+.. code::
+
+    In[1]:  %load_ext iminizinc
+            
+    In[2]:  n=6
+            
+    In[3]:  %%minizinc -a -o solutions
+            
+            include "globals.mzn";
+            int: n;
+            array[1..n] of var 1..n: queens;
+            constraint all_different(queens);
+            constraint all_different([queens[i]+i | i in 1..n]);
+            constraint all_different([queens[i]-i | i in 1..n]);
+            solve satisfy;
+            
+    In[4]:  solutions
+    
+    Out[4]: [{u'queens': [5, 3, 1, 6, 4, 2]},
+             {u'queens': [4, 1, 5, 2, 6, 3]},
+             {u'queens': [3, 6, 2, 5, 1, 4]},
+             {u'queens': [2, 4, 6, 1, 3, 5]}]
+
+The magic supports a number of additional options, take a look at the help using
+
+.. code::
+
+    In[1]:  %%minizinc?
