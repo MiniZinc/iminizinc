@@ -51,12 +51,13 @@ CodeMirror.defineMode("text/minizinc", function(config) {
   "where":true,
   "xor":true};
 
+  var punc = ":;,.(){}[]";
 
   function tokenBase(stream, state) {
     var ch = stream.next();
     if (ch == '"') {
-      state.tokenize = tokenString;
-      return state.tokenize(stream, state);
+      state.tokenize.push(tokenString);
+      return tokenString(stream, state);
     }
     if (/[\d\.]/.test(ch)) {
       if (ch == ".") {
@@ -70,7 +71,7 @@ CodeMirror.defineMode("text/minizinc", function(config) {
     }
     if (ch == "/") {
       if (stream.eat("*")) {
-        state.tokenize = tokenComment;
+        state.tokenize.push(tokenComment);
         return tokenComment(stream, state);
       }
     }
@@ -81,6 +82,9 @@ CodeMirror.defineMode("text/minizinc", function(config) {
     if (isOperatorChar.test(ch)) {
       stream.eatWhile(isOperatorChar);
       return "operator";
+    }
+    if (punc.indexOf(ch) > -1) {
+      return "punctuation";
     }
     stream.eatWhile(/[\w\$_\xa1-\uffff]/);
     var cur = stream.current();
@@ -94,7 +98,7 @@ CodeMirror.defineMode("text/minizinc", function(config) {
     var maybeEnd = false, ch;
     while (ch = stream.next()) {
       if (ch == "/" && maybeEnd) {
-        state.tokenize = tokenBase;
+        state.tokenize.pop();
         break;
       }
       maybeEnd = (ch == "*");
@@ -102,27 +106,54 @@ CodeMirror.defineMode("text/minizinc", function(config) {
     return "comment";
   }
 
+  function tokenUntilClosingParen() {
+    var depth = 0;
+    return function(stream, state, prev) {
+      var inner = tokenBase(stream, state, prev);
+      console.log("untilClosing",inner,stream.current());
+      if (inner == "punctuation") {
+        if (stream.current() == "(") {
+          ++depth;
+        } else if (stream.current() == ")") {
+          if (depth == 0) {
+            stream.backUp(1)
+            state.tokenize.pop()
+            return state.tokenize[state.tokenize.length - 1](stream, state)
+          } else {
+            --depth;
+          }
+        }
+      }
+      return inner;
+    }
+  }
+
   function tokenString(stream, state) {
     var escaped = false, next, end = false;
     while ((next = stream.next()) != null) {
+      if (next=='(' && escaped) {
+        state.tokenize.push(tokenUntilClosingParen());
+        return "string";
+      }
       if (next == '"' && !escaped) {end = true; break;}
       escaped = !escaped && next == "\\";
     }
     if (end || !escaped)
-      state.tokenize = tokenBase;
+      state.tokenize.pop();
     return "string";
   }
 
   return {
     startState: function(basecolumn) {
       return {
-        tokenize: null
+        tokenize: []
       };
     },
 
     token: function(stream, state) {
       if (stream.eatSpace()) return null;
-      var style = (state.tokenize || tokenBase)(stream, state);
+      var style = (state.tokenize[state.tokenize.length - 1] || tokenBase)(stream, state);
+      console.log("token",style);
       return style;
     },
 
