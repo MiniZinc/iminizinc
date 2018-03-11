@@ -122,77 +122,80 @@ class MznMagics(Magics):
                     print("\n".join(errors))
                     return
                 else:
-                    with open(tmpdir+"/data.json", "w") as dataf:
-                        json.dump(bindings, dataf)
+                    jsondata = []
+                    if len(bindings)!=0:
+                        with open(tmpdir+"/data.json", "w") as dataf:
+                            json.dump(bindings, dataf)
                         dataf.close()
-                        pipes = subprocess.Popen(mzn2fzn+["--output-mode","json",tmpdir+"/model.mzn"]+args.model+
-                                                 [tmpdir+"/data.json"]+args.data,
-                                                 stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
-                        (output,erroutput) = pipes.communicate()
-                        if pipes.returncode != 0:
-                            print("Error in MiniZinc:\n"+erroutput)
-                            return
-                        if len(erroutput) != 0:
-                            print(erroutput.rstrip())
-                        pipes = subprocess.Popen(solver+[tmpdir+"/model.fzn"],
-                                                 stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
-                        (fznoutput,erroutput) = pipes.communicate()
-                        if pipes.returncode != 0:
-                            print("Error in "+solver[0]+":\n"+erroutput)
-                        if len(erroutput) != 0:
-                            print(erroutput.rstrip())
-                        with open(tmpdir+"/model.ozn","r") as oznfile:
-                            ozn = oznfile.read()
-                        solns2outArgs = ["solns2out",
-                                         "--unsat-msg","",
-                                         "--unbounded-msg","",
-                                         "--unsatorunbnd-msg","",
-                                         "--unknown-msg","",
-                                         "--error-msg","",
-                                         "--search-complete-msg","",
-                                         "--solution-comma",",",
-                                         "--soln-separator","",
-                                         tmpdir+"/model.ozn"]
-                        pipes = subprocess.Popen(solns2outArgs,
-                                                 stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
-                        (solns2output,erroutput) = pipes.communicate(fznoutput)
-                        if pipes.returncode != 0:
-                            print("Error in solns2out:\n"+erroutput)
-                            return
-                        if len(erroutput) != 0:
-                            print(erroutput.rstrip())
-                        # Remove comments from output
-                        cleanoutput = []
-                        commentsoutput = []
-                        for l in solns2output.splitlines():
-                            comment = re.search(r"^\s*%+\s*(.*)",l)
-                            if comment:
-                                commentsoutput.append(comment.group(1))
-                            else:
-                                cleanoutput.append(l)
-                        solutions = json.loads("["+"".join(cleanoutput)+"]")
-                        if len(commentsoutput) > 0:
-                            print("Solver output:")
-                            print("\n".join(commentsoutput))
-                        if args.solution_mode=="return":
-                            if args.all_solutions:
-                                return solutions
-                            else:
-                                if len(solutions)==0:
-                                    return None
-                                else:
-                                    return solutions[-1]
+                        jsondata = [tmpdir+"/data.json"]
+                    pipes = subprocess.Popen(mzn2fzn+["--output-mode","json",tmpdir+"/model.mzn"]+args.model+
+                                             jsondata+args.data,
+                                             stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
+                    (output,erroutput) = pipes.communicate()
+                    if pipes.returncode != 0:
+                        print("Error in MiniZinc:\n"+erroutput)
+                        return
+                    if len(erroutput) != 0:
+                        print(erroutput.rstrip())
+                    pipes = subprocess.Popen(solver+[tmpdir+"/model.fzn"],
+                                             stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
+                    (fznoutput,erroutput) = pipes.communicate()
+                    if pipes.returncode != 0:
+                        print("Error in "+solver[0]+":\n"+erroutput)
+                    if len(erroutput) != 0:
+                        print(erroutput.rstrip())
+                    with open(tmpdir+"/model.ozn","r") as oznfile:
+                        ozn = oznfile.read()
+                    solns2outArgs = ["solns2out",
+                                     "--unsat-msg","",
+                                     "--unbounded-msg","",
+                                     "--unsatorunbnd-msg","",
+                                     "--unknown-msg","",
+                                     "--error-msg","",
+                                     "--search-complete-msg","",
+                                     "--solution-comma",",",
+                                     "--soln-separator","",
+                                     tmpdir+"/model.ozn"]
+                    pipes = subprocess.Popen(solns2outArgs,
+                                             stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
+                    (solns2output,erroutput) = pipes.communicate(fznoutput)
+                    if pipes.returncode != 0:
+                        print("Error in solns2out:\n"+erroutput)
+                        return
+                    if len(erroutput) != 0:
+                        print(erroutput.rstrip())
+                    # Remove comments from output
+                    cleanoutput = []
+                    commentsoutput = []
+                    for l in solns2output.splitlines():
+                        comment = re.search(r"^\s*%+\s*(.*)",l)
+                        if comment:
+                            commentsoutput.append(comment.group(1))
+                        else:
+                            cleanoutput.append(l)
+                    solutions = json.loads("["+"".join(cleanoutput)+"]")
+                    if len(commentsoutput) > 0:
+                        print("Solver output:")
+                        print("\n".join(commentsoutput))
+                    if args.solution_mode=="return":
+                        if args.all_solutions:
+                            return solutions
                         else:
                             if len(solutions)==0:
-                                print("No solutions found")
                                 return None
                             else:
-                                solution = solutions[-1]
-                                for var in solution:
-                                    self.shell.user_ns[var] = solution[var]
-                                    print(var+"="+str(solution[var]))
-                        return
-                        
+                                return solutions[-1]
+                    else:
+                        if len(solutions)==0:
+                            print("No solutions found")
+                            return None
+                        else:
+                            solution = solutions[-1]
+                            for var in solution:
+                                self.shell.user_ns[var] = solution[var]
+                                print(var+"="+str(solution[var]))
+                    return
+                    
         
         # print("Full access to the main IPython object:", self.shell)
         # print("Variables in the user namespace:", list(self.shell.user_ns.keys()))
