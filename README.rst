@@ -38,14 +38,11 @@ After installing the module, you have to load the extension using ``%load_ext im
             constraint all_different([queens[i]+i | i in 1..n]);
             constraint all_different([queens[i]-i | i in 1..n]);
             solve satisfy;
+    Out[3]: {u'queens': [4, 2, 7, 3, 6, 8, 5, 1]}
             
-    In[4]:  queens
-    
-    Out[4]: [4, 2, 7, 3, 6, 8, 5, 1]
+As you can see, the model binds variables in the environment (in this case, ``n``) to MiniZinc parameters, and returns an object with fields for all declared decision variables.
 
-As you can see, the model binds variables in the environment (in this case, ``n``) to MiniZinc parameters, and binds the variables in a solution (``queens``) back to Python variables.
-
-Alternatively, you can bind the solution to a python object, like this:
+Alternatively, you can bind the decision variables to Python variables:
 
 .. code::
 
@@ -53,7 +50,7 @@ Alternatively, you can bind the solution to a python object, like this:
             
     In[2]:  n=8
             
-    In[3]:  %%minizinc -o solution
+    In[3]:  %%minizinc -m bind
             
             include "globals.mzn";
             int: n;
@@ -63,9 +60,9 @@ Alternatively, you can bind the solution to a python object, like this:
             constraint all_different([queens[i]-i | i in 1..n]);
             solve satisfy;
             
-    In[4]:  solution
+    In[4]:  queens
     
-    Out[4]: {u'queens': [4, 2, 7, 3, 6, 8, 5, 1]}
+    Out[4]: [4, 2, 7, 3, 6, 8, 5, 1]
 
 If you want to find all solutions of a satisfaction problem, or all intermediate solutions of an optimisation problem, you can use the ``-a`` flag:
 
@@ -75,7 +72,7 @@ If you want to find all solutions of a satisfaction problem, or all intermediate
             
     In[2]:  n=6
             
-    In[3]:  %%minizinc -a -o solutions
+    In[3]:  %%minizinc -a
             
             include "globals.mzn";
             int: n;
@@ -85,9 +82,7 @@ If you want to find all solutions of a satisfaction problem, or all intermediate
             constraint all_different([queens[i]-i | i in 1..n]);
             solve satisfy;
             
-    In[4]:  solutions
-    
-    Out[4]: [{u'queens': [5, 3, 1, 6, 4, 2]},
+    Out[3]: [{u'queens': [5, 3, 1, 6, 4, 2]},
              {u'queens': [4, 1, 5, 2, 6, 3]},
              {u'queens': [3, 6, 2, 5, 1, 4]},
              {u'queens': [2, 4, 6, 1, 3, 5]}]

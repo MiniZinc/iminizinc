@@ -26,10 +26,11 @@ class MznMagics(Magics):
         help='Output statistics'
     )
     @magic_arguments.argument(
-        '-o',
-        '--solution-object',
-        default=None,
-        help='Return solution(s) in this variable'
+        '-m',
+        '--solution-mode',
+        choices=["return","bind"],
+        default="return",
+        help='Whether to return solution(s) or bind them to variables'
     )
     @magic_arguments.argument(
         '-a',
@@ -64,7 +65,7 @@ class MznMagics(Magics):
 
     @line_cell_magic
     def minizinc(self, line, cell=None):
-        "minizinc magic"
+        "MiniZinc magic"
         args = magic_arguments.parse_argstring(self.minizinc, line)
         solver = []
         if args.solver=="gecode":
@@ -107,7 +108,7 @@ class MznMagics(Magics):
                                          stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
                 (output,erroutput) = pipes.communicate()
                 if pipes.returncode != 0:
-                    print(erroutput)
+                    print(erroutput.rstrip())
                     return
                 model_ifc = json.loads(output)
                 errors = []
@@ -132,14 +133,14 @@ class MznMagics(Magics):
                             print("Error in MiniZinc:\n"+erroutput)
                             return
                         if len(erroutput) != 0:
-                            print(erroutput)
+                            print(erroutput.rstrip())
                         pipes = subprocess.Popen(solver+[tmpdir+"/model.fzn"],
                                                  stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
                         (fznoutput,erroutput) = pipes.communicate()
                         if pipes.returncode != 0:
                             print("Error in "+solver[0]+":\n"+erroutput)
                         if len(erroutput) != 0:
-                            print(erroutput)
+                            print(erroutput.rstrip())
                         with open(tmpdir+"/model.ozn","r") as oznfile:
                             ozn = oznfile.read()
                         solns2outArgs = ["solns2out",
@@ -159,7 +160,7 @@ class MznMagics(Magics):
                             print("Error in solns2out:\n"+erroutput)
                             return
                         if len(erroutput) != 0:
-                            print(erroutput)
+                            print(erroutput.rstrip())
                         # Remove comments from output
                         cleanoutput = []
                         commentsoutput = []
@@ -170,31 +171,26 @@ class MznMagics(Magics):
                             else:
                                 cleanoutput.append(l)
                         solutions = json.loads("["+"".join(cleanoutput)+"]")
-                        bindings = []
-                        if args.solution_object:
-                            if args.all_solutions:
-                                self.shell.user_ns[args.solution_object] = solutions
-                                bindings.append(args.solution_object+"="+str(solutions))
-                            else:
-                                if len(solutions)==0:
-                                    self.shell.user_ns[args.solution_object] = None
-                                    bindings.append(args.solution_object+"=None")
-                                else:
-                                    self.shell.user_ns[args.solution_object] = solutions[-1]
-                                    bindings.append(args.solution_object+"="+str(solutions[-1]))
-                        else:
-                            if len(solutions)==0:
-                                print("No solutions found")
-                                return
-                            solution = solutions[-1]
-                            for var in solution:
-                                self.shell.user_ns[var] = solution[var]
-                                bindings.append(var+"="+str(solution[var]))
                         if len(commentsoutput) > 0:
                             print("Solver output:")
                             print("\n".join(commentsoutput))
-                            print()
-                        print("\n".join(bindings))
+                        if args.solution_mode=="return":
+                            if args.all_solutions:
+                                return solutions
+                            else:
+                                if len(solutions)==0:
+                                    return None
+                                else:
+                                    return solutions[-1]
+                        else:
+                            if len(solutions)==0:
+                                print("No solutions found")
+                                return None
+                            else:
+                                solution = solutions[-1]
+                                for var in solution:
+                                    self.shell.user_ns[var] = solution[var]
+                                    print(var+"="+str(solution[var]))
                         return
                         
         
@@ -210,7 +206,7 @@ def checkMzn():
         if pipes.returncode != 0:
             print("Error while initialising extension: cannot run mzn2fzn. Make sure it is on the PATH when you run the Jupyter server.")
             return False
-        print(output)
+        print(output.rstrip())
     except OSError as e:
         print("Error while initialising extension: cannot run mzn2fzn. Make sure it is on the PATH when you run the Jupyter server.")
         return False
