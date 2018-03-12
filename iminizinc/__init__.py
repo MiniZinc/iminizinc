@@ -1,4 +1,6 @@
-from mzn import MznMagics, checkMzn
+from __future__ import absolute_import
+from .mzn import MznMagics, checkMzn
+
 from IPython.core.display import display, HTML, Javascript
 from os import path
 
