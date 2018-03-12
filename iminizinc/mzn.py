@@ -167,7 +167,7 @@ class MznMagics(Magics):
                     # Remove comments from output
                     cleanoutput = []
                     commentsoutput = []
-                    for l in solns2output.splitlines():
+                    for l in solns2output.decode().splitlines():
                         comment = re.search(r"^\s*%+\s*(.*)",l)
                         if comment:
                             commentsoutput.append(comment.group(1))
