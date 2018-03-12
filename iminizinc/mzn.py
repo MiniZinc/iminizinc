@@ -108,7 +108,7 @@ class MznMagics(Magics):
                                          stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
                 (output,erroutput) = pipes.communicate()
                 if pipes.returncode != 0:
-                    print(erroutput.rstrip())
+                    print(erroutput.rstrip().decode())
                     return
                 model_ifc = json.loads(output)
                 errors = []
@@ -133,17 +133,17 @@ class MznMagics(Magics):
                                              stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
                     (output,erroutput) = pipes.communicate()
                     if pipes.returncode != 0:
-                        print("Error in MiniZinc:\n"+erroutput)
+                        print("Error in MiniZinc:\n"+erroutput.decode())
                         return
                     if len(erroutput) != 0:
-                        print(erroutput.rstrip())
+                        print(erroutput.rstrip().decode())
                     pipes = subprocess.Popen(solver+[tmpdir+"/model.fzn"],
                                              stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
                     (fznoutput,erroutput) = pipes.communicate()
                     if pipes.returncode != 0:
-                        print("Error in "+solver[0]+":\n"+erroutput)
+                        print("Error in "+solver[0]+":\n"+erroutput.decode())
                     if len(erroutput) != 0:
-                        print(erroutput.rstrip())
+                        print(erroutput.rstrip().decode())
                     with open(tmpdir+"/model.ozn","r") as oznfile:
                         ozn = oznfile.read()
                     solns2outArgs = ["solns2out",
@@ -160,10 +160,10 @@ class MznMagics(Magics):
                                              stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
                     (solns2output,erroutput) = pipes.communicate(fznoutput)
                     if pipes.returncode != 0:
-                        print("Error in solns2out:\n"+erroutput)
+                        print("Error in solns2out:\n"+erroutput.decode())
                         return
                     if len(erroutput) != 0:
-                        print(erroutput.rstrip())
+                        print(erroutput.rstrip().decode())
                     # Remove comments from output
                     cleanoutput = []
                     commentsoutput = []
