@@ -167,7 +167,7 @@ class MznMagics(Magics):
                     # Remove comments from output
                     cleanoutput = []
                     commentsoutput = []
-                    for l in solns2output.splitlines():
+                    for l in solns2output.decode().splitlines():
                         comment = re.search(r"^\s*%+\s*(.*)",l)
                         if comment:
                             commentsoutput.append(comment.group(1))
@@ -209,7 +209,7 @@ def checkMzn():
         if pipes.returncode != 0:
             print("Error while initialising extension: cannot run mzn2fzn. Make sure it is on the PATH when you run the Jupyter server.")
             return False
-        print(output.rstrip())
+        print(output.rstrip().decode())
     except OSError as e:
         print("Error while initialising extension: cannot run mzn2fzn. Make sure it is on the PATH when you run the Jupyter server.")
         return False
