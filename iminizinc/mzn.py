@@ -83,22 +83,22 @@ class MznMagics(Magics):
         else:
             print("No solver given")
             return
-        
+
         mzn2fzn = ["mzn2fzn",mznlib]
         if args.verbose:
             mzn2fzn.append("-v")
         if args.statistics:
             mzn2fzn.append("-s")
-        
+
         if args.statistics:
             solver.append("-s")
         if args.all_solutions:
             solver.append("-a")
-        
+
         my_env = os.environ.copy()
 
         cwd = os.getcwd()
-        
+
         with TemporaryDirectory() as tmpdir:
             with open(tmpdir+"/model.mzn", "w") as modelf:
                 if cell is not None:
@@ -167,7 +167,7 @@ class MznMagics(Magics):
                     # Remove comments from output
                     cleanoutput = []
                     commentsoutput = []
-                    for l in solns2output.splitlines():
+                    for l in solns2output.decode().splitlines():
                         comment = re.search(r"^\s*%+\s*(.*)",l)
                         if comment:
                             commentsoutput.append(comment.group(1))
@@ -195,8 +195,8 @@ class MznMagics(Magics):
                                 self.shell.user_ns[var] = solution[var]
                                 print(var+"="+str(solution[var]))
                     return
-                    
-        
+
+
         # print("Full access to the main IPython object:", self.shell)
         # print("Variables in the user namespace:", list(self.shell.user_ns.keys()))
         return
@@ -209,7 +209,7 @@ def checkMzn():
         if pipes.returncode != 0:
             print("Error while initialising extension: cannot run mzn2fzn. Make sure it is on the PATH when you run the Jupyter server.")
             return False
-        print(output.rstrip())
+        print(output.rstrip().decode())
     except OSError as e:
         print("Error while initialising extension: cannot run mzn2fzn. Make sure it is on the PATH when you run the Jupyter server.")
         return False
