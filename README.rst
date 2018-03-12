@@ -16,7 +16,10 @@ You can install or upgrade this module via pip
 
     pip install -U iminizinc
 
-Make sure that the ``mzn2fzn`` binary as well as solver binaries (currently only ``fzn-gecode`` and ``mzn-cbc`` are supported) are on the PATH when you start the notebook server.
+Consult your Python documentation to find out if you need any extra options (e.g. you may want to use the --user flag to install only for the current user, or you may want to use virtual environments).
+
+Make sure that the ``mzn2fzn`` binary as well as solver binaries (currently only ``fzn-gecode`` and ``mzn-cbc`` are supported) are on the PATH when you start the notebook server. The easiest way to do that is to get the "bundled installation" that includes the MiniZinc IDE and a few solvers, available from GitHub here: https://github.com/MiniZinc/MiniZincIDE/releases/latest
+You then need to change your PATH environment variable to include the MiniZinc installation.
 
 Basic usage
 ===========
@@ -87,7 +90,7 @@ If you want to find all solutions of a satisfaction problem, or all intermediate
              {u'queens': [3, 6, 2, 5, 1, 4]},
              {u'queens': [2, 4, 6, 1, 3, 5]}]
 
-The magic supports a number of additional options, take a look at the help using
+The magic supports a number of additional options, in particular loading MiniZinc models and data from files. Some of these may only work with the development version of MiniZinc (i.e., not the one that comes with the bundled binary releases). You can take a look at the help using
 
 .. code::
 
