@@ -24,7 +24,7 @@ class MznMagics(Magics):
         '-s',
         '--statistics',
         action='store_true',
-        help='Output statistics'
+        help='Return compiler and solver statistics. Statistics will be bound to "statistics" when using -m bound'
     )
     @magic_arguments.argument(
         '-m',
