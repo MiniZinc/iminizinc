@@ -8,6 +8,7 @@ from notebook.services.config.manager import ConfigManager
 import subprocess, os, sys
 import json
 import re
+from datetime import timedelta
 
 @magics_class
 class MznMagics(Magics):
@@ -136,14 +137,20 @@ class MznMagics(Magics):
                         print("Error in MiniZinc:\n"+erroutput.decode())
                         return
                     if len(erroutput) != 0:
-                        print(erroutput.rstrip().decode())
+                        if args.statistics:
+                            compiler_stats = erroutput.decode().splitlines()
+                        else:
+                            print(erroutput.rstrip().decode())
                     pipes = subprocess.Popen(solver+[tmpdir+"/model.fzn"],
                                              stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
                     (fznoutput,erroutput) = pipes.communicate()
                     if pipes.returncode != 0:
                         print("Error in "+solver[0]+":\n"+erroutput.decode())
                     if len(erroutput) != 0:
-                        print(erroutput.rstrip().decode())
+                        if args.statistics and args.solver == "cbc":
+                            solver_stats = erroutput.decode().splitlines()
+                        else:
+                            print(erroutput.rstrip().decode())
                     with open(tmpdir+"/model.ozn","r") as oznfile:
                         ozn = oznfile.read()
                     solns2outArgs = ["solns2out",
@@ -174,18 +181,34 @@ class MznMagics(Magics):
                         else:
                             cleanoutput.append(l)
                     solutions = json.loads("["+"".join(cleanoutput)+"]")
+                    if args.statistics:
+                        if args.solver == "gecode":
+                            solver_stats = commentsoutput
+                        statistics = self.parse_statistics(
+                            args.solver,
+                            compiler_stats,
+                            solver_stats
+                        )
                     if len(commentsoutput) > 0:
                         print("Solver output:")
                         print("\n".join(commentsoutput))
                     if args.solution_mode=="return":
+                        ret = None
                         if args.all_solutions:
-                            return solutions
+                            ret = solutions
                         else:
                             if len(solutions)==0:
-                                return None
+                                ret = None
                             else:
-                                return solutions[-1]
+                                ret = solutions[-1]
+                        if args.statistics:
+                            return (ret, statistics)
+                        else:
+                            return ret
                     else:
+                        if args.statistics:
+                            print("statistics=" + str(statistics))
+                            self.shell.user_ns["statistics"] = statistics
                         if len(solutions)==0:
                             print("No solutions found")
                             return None
@@ -200,6 +223,86 @@ class MznMagics(Magics):
         # print("Full access to the main IPython object:", self.shell)
         # print("Variables in the user namespace:", list(self.shell.user_ns.keys()))
         return
+
+    def parse_statistics(self, solver, compiler_out, solver_out):
+        statistics = {"flatzinc": {}, "solver": {}}
+        # Parse Flattening statistics
+        for line in compiler_out:
+            regex = re.search(r"Paths:\s*(\d+)", line)
+            if regex:
+                statistics["flatzinc"]["paths"] = int(regex.group(1))
+                continue
+
+            regex = re.search(r"Variables:\s*((\d+)\s*bool,?)?\s*((\d+)\s*int,?)?\s*((\d+)\s*float,?)?\s*((\d+)\s*set,?)?", line)
+            if regex:
+                if regex.group(2) is not None:
+                    statistics["flatzinc"]["bool variables"] = int(regex.group(2))
+                if regex.group(4) is not None:
+                    statistics["flatzinc"]["int variables"] = int(regex.group(4))
+                if regex.group(6) is not None:
+                    statistics["flatzinc"]["float variables"] = int(regex.group(6))
+                if regex.group(8) is not None:
+                    statistics["flatzinc"]["set variables"] = int(regex.group(8))
+                continue
+
+            regex = re.search(r"Constraints:\s*((\d+)\s*bool,?)?\s*((\d+)\s*int,?)?\s*((\d+)\s*float,?)?\s*((\d+)\s*set,?)?", line)
+            if regex:
+                if regex.group(2) is not None:
+                    statistics["flatzinc"]["bool constraints"] = int(regex.group(2))
+                if regex.group(4) is not None:
+                    statistics["flatzinc"]["int constraints"] = int(regex.group(4))
+                if regex.group(6) is not None:
+                    statistics["flatzinc"]["float constraints"] = int(regex.group(6))
+                if regex.group(8) is not None:
+                    statistics["flatzinc"]["set constraints"] = int(regex.group(8))
+                continue
+
+            regex = re.search(r"This\s+is\s+a\s+(.*)\s+problem.", line)
+            if regex:
+                statistics["flatzinc"]["method"] = regex.group(1)
+                continue
+
+        # Parse solver statistics
+        if solver == "gecode":
+            tmp = []
+            while len(solver_out) > 0:
+                line = solver_out.pop()
+                # Parse times
+                regex = re.search(r"(runtime|solvetime):\s+\d+.\d+\s+\((\d+).(\d+)\s+ms\)", line)
+                if regex:
+                    statistics["solver"][regex.group(1)] = timedelta(milliseconds=int(regex.group(2)), microseconds=int(regex.group(3)))
+                    continue
+                # Parse simple numbers
+                regex = re.search(r"(solutions|variables|propagators|propagations|nodes|failures|restarts|peak depth):\s+(\d+)", line)
+                if regex:
+                    statistics["solver"][regex.group(1)] = int(regex.group(2))
+                    continue
+
+                tmp.append(line)
+
+            tmp.reverse()
+            solver_out.extend(tmp)
+        elif solver == "cbc":
+            for line in solver_out:
+                # Parse Status
+                regex = re.search(r"MIP Status:\s+(\w+)", line)
+                if regex:
+                    statistics["solver"]["status"] = regex.group(1).lower()
+                    continue
+                # Parse other statistics
+                regex = re.search(r"obj, bound, CPU_time, nodes \(left\):\s*(\d+),\s*(\d+),\s*(\d+).(\d+),\s*(\d+)\s*\(\s*(-?\d+)\s*\)", line)
+                if regex:
+                    statistics["solver"]["objective"] = int(regex.group(1))
+                    statistics["solver"]["bound"] = int(regex.group(2))
+                    statistics["solver"]["CPU time"] = timedelta(seconds=int(regex.group(3)), milliseconds=int(regex.group(4)))
+                    statistics["solver"]["nodes"] = int(regex.group(5))
+                    statistics["solver"]["nodes left"] = int(regex.group(6))
+                    continue
+        else:
+            print("Unknown solver statistics formatting")
+
+        return statistics
+
 
 def checkMzn():
     try:
