@@ -72,13 +72,13 @@ class MznMagics(Magics):
             solver = ["fzn-gecode"]
             if args.timeout:
                 solver.append("-time")
-                solver.append(args.timeout*1000)
+                solver.append(str(args.timeout*1000))
             mznlib = "-Ggecode"
         elif args.solver=="cbc":
             solver = ["mzn-cbc"]
             if args.timeout:
                 solver.append("--timeout")
-                solver.append(args.timeout)
+                solver.append(str(args.timeout))
             mznlib = "-Glinear"
         else:
             print("No solver given")
