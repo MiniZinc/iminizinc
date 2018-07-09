@@ -9,6 +9,17 @@ import subprocess, os, sys
 import json
 import re
 
+Solns2outArgs = [
+    "--unsat-msg","",
+    "--unbounded-msg","",
+    "--unsatorunbnd-msg","",
+    "--unknown-msg","",
+    "--error-msg","",
+    "--search-complete-msg","",
+    "--solution-comma",",",
+    "--soln-separator",""
+]
+
 @magics_class
 class MznMagics(Magics):
 
@@ -38,15 +49,15 @@ class MznMagics(Magics):
         action='store_true',
         help='Return all solutions for satisfaction problems, intermediate solutions for optimisation problems. Implies -o.'
     )
-    @magic_arguments.argument(
-        '-t',
-        '--timeout',
-        type=int,
-        help='Timeout (in seconds)'
-    )
+    # TODO: Is this one of the standard flags?
+    # @magic_arguments.argument(
+    #     '-t',
+    #     '--timeout',
+    #     type=int,
+    #     help='Timeout (in seconds)'
+    # )
     @magic_arguments.argument(
         '--solver',
-        choices=["gecode","cbc"],
         default="gecode",
         help='Solver to run'
     )
@@ -66,35 +77,26 @@ class MznMagics(Magics):
     @line_cell_magic
     def minizinc(self, line, cell=None):
         "MiniZinc magic"
+        mzn_proc = ["minizinc",solver]
+
         args = magic_arguments.parse_argstring(self.minizinc, line)
-        solver = []
-        if args.solver=="gecode":
-            solver = ["fzn-gecode"]
-            if args.timeout:
-                solver.append("-time")
-                solver.append(str(args.timeout*1000))
-            mznlib = "-Ggecode"
-        elif args.solver=="cbc":
-            solver = ["mzn-cbc"]
-            if args.timeout:
-                solver.append("--timeout")
-                solver.append(str(args.timeout))
-            mznlib = "-Glinear"
+        if args.solver != "":
+            mzn_proc.append(["--solver", args.solver]
         else:
             print("No solver given")
             return
-        
-        mzn2fzn = ["mzn2fzn",mznlib]
+
+        mzn_test = mzn_proc[:]
         if args.verbose:
-            mzn2fzn.append("-v")
+            mzn_proc.append("-v")
         if args.statistics:
-            mzn2fzn.append("-s")
-        
+            mzn_proc.append("-s")
+
         if args.statistics:
-            solver.append("-s")
+            mzn_proc.append("-s")
         if args.all_solutions:
-            solver.append("-a")
-        
+            mzn_proc.append("-a")
+
         my_env = os.environ.copy()
 
         cwd = os.getcwd()
@@ -104,7 +106,7 @@ class MznMagics(Magics):
                 if cell is not None:
                     modelf.write(cell)
                 modelf.close()
-                pipes = subprocess.Popen(mzn2fzn+["--model-interface-only",tmpdir+"/model.mzn"]+args.model+args.data,
+                pipes = subprocess.Popen(mzn_test+["--model-interface-only",tmpdir+"/model.mzn"]+args.model+args.data,
                                          stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
                 (output,erroutput) = pipes.communicate()
                 if pipes.returncode != 0:
@@ -128,46 +130,21 @@ class MznMagics(Magics):
                             json.dump(bindings, dataf)
                         dataf.close()
                         jsondata = [tmpdir+"/data.json"]
-                    pipes = subprocess.Popen(mzn2fzn+["--output-mode","json",tmpdir+"/model.mzn"]+args.model+
-                                             jsondata+args.data,
+                    pipes = subprocess.Popen(mzn_proc
+                                            + ["--output-mode","json",tmpdir+"/model.mzn"]
+                                            + args.model + Solns2outArgs
+                                            + jsondata + args.data,
                                              stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
-                    (output,erroutput) = pipes.communicate()
+                    (mznoutput,erroutput) = pipes.communicate()
                     if pipes.returncode != 0:
                         print("Error in MiniZinc:\n"+erroutput.decode())
-                        return
-                    if len(erroutput) != 0:
-                        print(erroutput.rstrip().decode())
-                    pipes = subprocess.Popen(solver+[tmpdir+"/model.fzn"],
-                                             stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
-                    (fznoutput,erroutput) = pipes.communicate()
-                    if pipes.returncode != 0:
-                        print("Error in "+solver[0]+":\n"+erroutput.decode())
-                    if len(erroutput) != 0:
-                        print(erroutput.rstrip().decode())
-                    with open(tmpdir+"/model.ozn","r") as oznfile:
-                        ozn = oznfile.read()
-                    solns2outArgs = ["solns2out",
-                                     "--unsat-msg","",
-                                     "--unbounded-msg","",
-                                     "--unsatorunbnd-msg","",
-                                     "--unknown-msg","",
-                                     "--error-msg","",
-                                     "--search-complete-msg","",
-                                     "--solution-comma",",",
-                                     "--soln-separator","",
-                                     tmpdir+"/model.ozn"]
-                    pipes = subprocess.Popen(solns2outArgs,
-                                             stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
-                    (solns2output,erroutput) = pipes.communicate(fznoutput)
-                    if pipes.returncode != 0:
-                        print("Error in solns2out:\n"+erroutput.decode())
                         return
                     if len(erroutput) != 0:
                         print(erroutput.rstrip().decode())
                     # Remove comments from output
                     cleanoutput = []
                     commentsoutput = []
-                    for l in solns2output.decode().splitlines():
+                    for l in mznoutput.decode().splitlines():
                         comment = re.search(r"^\s*%+\s*(.*)",l)
                         if comment:
                             commentsoutput.append(comment.group(1))
@@ -203,14 +180,14 @@ class MznMagics(Magics):
 
 def checkMzn():
     try:
-        pipes = subprocess.Popen(["mzn2fzn","--version"],
+        pipes = subprocess.Popen(["minizinc","--version"],
                                  stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         (output,erroutput) = pipes.communicate()
         if pipes.returncode != 0:
-            print("Error while initialising extension: cannot run mzn2fzn. Make sure it is on the PATH when you run the Jupyter server.")
+            print("Error while initialising extension: cannot run minizinc. Make sure it is on the PATH when you run the Jupyter server.")
             return False
         print(output.rstrip().decode())
     except OSError as e:
-        print("Error while initialising extension: cannot run mzn2fzn. Make sure it is on the PATH when you run the Jupyter server.")
+        print("Error while initialising extension: cannot run minizinc. Make sure it is on the PATH when you run the Jupyter server.")
         return False
     return True
