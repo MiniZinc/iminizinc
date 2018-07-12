@@ -20,6 +20,8 @@ Solns2outArgs = [
     "--soln-separator",""
 ]
 
+MznModels = {}
+
 @magics_class
 class MznMagics(Magics):
 
@@ -103,6 +105,11 @@ class MznMagics(Magics):
 
         with TemporaryDirectory() as tmpdir:
             with open(tmpdir+"/model.mzn", "w") as modelf:
+                for m in args.model:
+                    mzn = MznModels.get(m)
+                    if mzn is not None:
+                        args.model.remove(m)
+                        modelf.write(mzn)
                 if cell is not None:
                     modelf.write(cell)
                 modelf.close()
@@ -177,6 +184,20 @@ class MznMagics(Magics):
         # print("Full access to the main IPython object:", self.shell)
         # print("Variables in the user namespace:", list(self.shell.user_ns.keys()))
         return
+
+    @cell_magic
+    def mzn_model(self, line, cell):
+        args = magic_arguments.parse_argstring(self.minizinc, line)
+        if args.model == []:
+            print("No model name provided")
+            return
+        elif len(args.model) > 1:
+            print("Multigle model names provided")
+            return
+
+        MznModels[args.model[0]] = cell
+        return
+
 
 def checkMzn():
     try:
