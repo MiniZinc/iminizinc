@@ -77,11 +77,11 @@ class MznMagics(Magics):
     @line_cell_magic
     def minizinc(self, line, cell=None):
         "MiniZinc magic"
-        mzn_proc = ["minizinc",solver]
+        mzn_proc = ["minizinc"]
 
         args = magic_arguments.parse_argstring(self.minizinc, line)
         if args.solver != "":
-            mzn_proc.append(["--solver", args.solver]
+            mzn_proc.extend(["--solver", args.solver])
         else:
             print("No solver given")
             return
