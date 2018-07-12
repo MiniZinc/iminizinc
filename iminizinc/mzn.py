@@ -100,7 +100,7 @@ class MznMagics(Magics):
         my_env = os.environ.copy()
 
         cwd = os.getcwd()
-        
+
         with TemporaryDirectory() as tmpdir:
             with open(tmpdir+"/model.mzn", "w") as modelf:
                 if cell is not None:
@@ -172,8 +172,8 @@ class MznMagics(Magics):
                                 self.shell.user_ns[var] = solution[var]
                                 print(var+"="+str(solution[var]))
                     return
-                    
-        
+
+
         # print("Full access to the main IPython object:", self.shell)
         # print("Variables in the user namespace:", list(self.shell.user_ns.keys()))
         return
