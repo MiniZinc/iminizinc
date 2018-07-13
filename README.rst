@@ -90,6 +90,31 @@ If you want to find all solutions of a satisfaction problem, or all intermediate
              {u'queens': [3, 6, 2, 5, 1, 4]},
              {u'queens': [2, 4, 6, 1, 3, 5]}]
 
+You can also store your model to use the model iteratively:
+
+.. code::
+
+    In[1]:  %load_ext iminizinc
+
+    In[2]:  %%mzn_model queens
+
+            include "globals.mzn";
+            int: n;
+            array[1..n] of var 1..n: queens;
+            constraint all_different(queens);
+            constraint all_different([queens[i]+i | i in 1..n]);
+            constraint all_different([queens[i]-i | i in 1..n]);
+            solve satisfy;
+
+    In[3]:  for n in range(5,9):
+                x = %minizinc queens
+                print(x)
+
+    Out[3]: {'queens': [4, 2, 5, 3, 1]}
+            {'queens': [5, 3, 1, 6, 4, 2]}
+            {'queens': [6, 4, 2, 7, 5, 3, 1]}
+            {'queens': [4, 2, 7, 3, 6, 8, 5, 1]}
+
 The magic supports a number of additional options, in particular loading MiniZinc models and data from files. Some of these may only work with the development version of MiniZinc (i.e., not the one that comes with the bundled binary releases). You can take a look at the help using
 
 .. code::
