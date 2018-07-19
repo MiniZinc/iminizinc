@@ -14,10 +14,9 @@ Solns2outArgs = [
     "--unbounded-msg","",
     "--unsatorunbnd-msg","",
     "--unknown-msg","",
-    "--error-msg","",
     "--search-complete-msg","",
-    "--solution-comma",",",
-    "--soln-separator",""
+     "--solution-comma",",",
+     "--soln-separator",""
 ]
 
 MznModels = {}
