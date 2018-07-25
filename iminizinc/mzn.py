@@ -1,13 +1,13 @@
 from __future__ import print_function
-from IPython.core.magic import (Magics, magics_class, line_magic,
-                                cell_magic, line_cell_magic)
-from IPython.utils.tempdir import TemporaryDirectory
-from IPython.core.display import HTML
-from IPython.core import magic_arguments
-from notebook.services.config.manager import ConfigManager
-import subprocess, os, sys
+
 import json
+import os
 import re
+import subprocess
+
+from IPython.core import magic_arguments
+from IPython.core.magic import (Magics, magics_class, cell_magic, line_cell_magic)
+from IPython.utils.tempdir import TemporaryDirectory
 
 Solns2outArgs = [
     "--unsat-msg", "",
