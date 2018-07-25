@@ -7,6 +7,7 @@ from os import path
 with open(path.join(path.abspath(path.dirname(__file__)), 'static/minizinc.js')) as f:
     initHighlighter = f.read()
 
+
 def load_ipython_extension(ipython):
     """
     Any module file that define a function named `load_ipython_extension`

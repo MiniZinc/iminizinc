@@ -10,16 +10,17 @@ import json
 import re
 
 Solns2outArgs = [
-    "--unsat-msg","",
-    "--unbounded-msg","",
-    "--unsatorunbnd-msg","",
-    "--unknown-msg","",
-    "--search-complete-msg","",
-     "--solution-comma",",",
-     "--soln-separator",""
+    "--unsat-msg", "",
+    "--unbounded-msg", "",
+    "--unsatorunbnd-msg", "",
+    "--unknown-msg", "",
+    "--search-complete-msg", "",
+    "--solution-comma", ",",
+    "--soln-separator", ""
 ]
 
 MznModels = {}
+
 
 @magics_class
 class MznMagics(Magics):
@@ -40,7 +41,7 @@ class MznMagics(Magics):
     @magic_arguments.argument(
         '-m',
         '--solution-mode',
-        choices=["return","bind"],
+        choices=["return", "bind"],
         default="return",
         help='Whether to return solution(s) or bind them to variables'
     )
@@ -74,10 +75,9 @@ class MznMagics(Magics):
         default=[],
         help='Model to solve'
     )
-
     @line_cell_magic
     def minizinc(self, line, cell=None):
-        "MiniZinc magic"
+        """MiniZinc magic"""
         mzn_proc = ["minizinc"]
 
         args = magic_arguments.parse_argstring(self.minizinc, line)
@@ -103,7 +103,7 @@ class MznMagics(Magics):
         cwd = os.getcwd()
 
         with TemporaryDirectory() as tmpdir:
-            with open(tmpdir+"/model.mzn", "w") as modelf:
+            with open(tmpdir + "/model.mzn", "w") as modelf:
                 for m in args.model:
                     mzn = MznModels.get(m)
                     if mzn is not None:
@@ -112,9 +112,10 @@ class MznMagics(Magics):
                 if cell is not None:
                     modelf.write(cell)
                 modelf.close()
-                pipes = subprocess.Popen(mzn_test+["--model-interface-only",tmpdir+"/model.mzn"]+args.model+args.data,
-                                         stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
-                (output,erroutput) = pipes.communicate()
+                pipes = subprocess.Popen(
+                    mzn_test + ["--model-interface-only", tmpdir + "/model.mzn"] + args.model + args.data,
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=my_env)
+                (output, erroutput) = pipes.communicate()
                 if pipes.returncode != 0:
                     print(erroutput.rstrip().decode())
                     return
@@ -125,25 +126,25 @@ class MznMagics(Magics):
                     if var in self.shell.user_ns.keys():
                         bindings[var] = self.shell.user_ns[var]
                     else:
-                        errors.append("Variable "+var+" is undefined")
-                if len(errors)>0:
+                        errors.append("Variable " + var + " is undefined")
+                if len(errors) > 0:
                     print("\n".join(errors))
                     return
                 else:
                     jsondata = []
-                    if len(bindings)!=0:
-                        with open(tmpdir+"/data.json", "w") as dataf:
+                    if len(bindings) != 0:
+                        with open(tmpdir + "/data.json", "w") as dataf:
                             json.dump(bindings, dataf)
                         dataf.close()
-                        jsondata = [tmpdir+"/data.json"]
+                        jsondata = [tmpdir + "/data.json"]
                     pipes = subprocess.Popen(mzn_proc
-                                            + ["--output-mode","json",tmpdir+"/model.mzn"]
-                                            + args.model + Solns2outArgs
-                                            + jsondata + args.data,
-                                             stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=my_env)
-                    (mznoutput,erroutput) = pipes.communicate()
+                                             + ["--output-mode", "json", tmpdir + "/model.mzn"]
+                                             + args.model + Solns2outArgs
+                                             + jsondata + args.data,
+                                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=my_env)
+                    (mznoutput, erroutput) = pipes.communicate()
                     if pipes.returncode != 0:
-                        print("Error in MiniZinc:\n"+erroutput.decode())
+                        print("Error in MiniZinc:\n" + erroutput.decode())
                         return
                     if len(erroutput) != 0:
                         print(erroutput.rstrip().decode())
@@ -151,34 +152,33 @@ class MznMagics(Magics):
                     cleanoutput = []
                     commentsoutput = []
                     for l in mznoutput.decode().splitlines():
-                        comment = re.search(r"^\s*%+\s*(.*)",l)
+                        comment = re.search(r"^\s*%+\s*(.*)", l)
                         if comment:
                             commentsoutput.append(comment.group(1))
                         else:
                             cleanoutput.append(l)
-                    solutions = json.loads("["+"".join(cleanoutput)+"]")
+                    solutions = json.loads("[" + "".join(cleanoutput) + "]")
                     if len(commentsoutput) > 0:
                         print("Solver output:")
                         print("\n".join(commentsoutput))
-                    if args.solution_mode=="return":
+                    if args.solution_mode == "return":
                         if args.all_solutions:
                             return solutions
                         else:
-                            if len(solutions)==0:
+                            if len(solutions) == 0:
                                 return None
                             else:
                                 return solutions[-1]
                     else:
-                        if len(solutions)==0:
+                        if len(solutions) == 0:
                             print("No solutions found")
                             return None
                         else:
                             solution = solutions[-1]
                             for var in solution:
                                 self.shell.user_ns[var] = solution[var]
-                                print(var+"="+str(solution[var]))
+                                print(var + "=" + str(solution[var]))
                     return
-
 
         # print("Full access to the main IPython object:", self.shell)
         # print("Variables in the user namespace:", list(self.shell.user_ns.keys()))
@@ -200,14 +200,18 @@ class MznMagics(Magics):
 
 def checkMzn():
     try:
-        pipes = subprocess.Popen(["minizinc","--version"],
-                                 stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-        (output,erroutput) = pipes.communicate()
+        pipes = subprocess.Popen(["minizinc", "--version"],
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (output, erroutput) = pipes.communicate()
         if pipes.returncode != 0:
-            print("Error while initialising extension: cannot run minizinc. Make sure it is on the PATH when you run the Jupyter server.")
+            print(
+                "Error while initialising extension: cannot run minizinc. Make sure it is on the PATH when you run "
+                "the Jupyter server.")
             return False
         print(output.rstrip().decode())
     except OSError as e:
-        print("Error while initialising extension: cannot run minizinc. Make sure it is on the PATH when you run the Jupyter server.")
+        print(
+            "Error while initialising extension: cannot run minizinc. Make sure it is on the PATH when you run the "
+            "Jupyter server.")
         return False
     return True
