@@ -101,8 +101,6 @@ class MznMagics(Magics):
 
         my_env = os.environ.copy()
 
-        cwd = os.getcwd()
-
         with TemporaryDirectory() as tmpdir:
             with open(tmpdir + "/model.mzn", "w") as modelf:
                 for m in args.model:
