@@ -49,7 +49,8 @@ class MznMagics(Magics):
         '-a',
         '--all-solutions',
         action='store_true',
-        help='Return all solutions for satisfaction problems, intermediate solutions for optimisation problems. Implies -o.'
+        help='Return all solutions for satisfaction problems, intermediate solutions for optimisation problems. '
+             'Implies -o. '
     )
     # TODO: Is this one of the standard flags?
     # @magic_arguments.argument(
