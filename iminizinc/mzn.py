@@ -191,7 +191,7 @@ class MznMagics(Magics):
             print("No model name provided")
             return
         elif len(args.model) > 1:
-            print("Multigle model names provided")
+            print("Multiple model names provided")
             return
 
         MznModels[args.model[0]] = cell
