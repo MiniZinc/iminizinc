@@ -52,13 +52,12 @@ class MznMagics(Magics):
         help='Return all solutions for satisfaction problems, intermediate solutions for optimisation problems. '
              'Implies -o. '
     )
-    # TODO: Is this one of the standard flags?
-    # @magic_arguments.argument(
-    #     '-t',
-    #     '--timeout',
-    #     type=int,
-    #     help='Timeout (in seconds)'
-    # )
+    @magic_arguments.argument(
+        '-t',
+        '--time-limit',
+        type=int,
+        help='Time limit in milliseconds (includes compilation and solving)'
+    )
     @magic_arguments.argument(
         '--solver',
         default="gecode",
@@ -98,6 +97,10 @@ class MznMagics(Magics):
             mzn_proc.append("-s")
         if args.all_solutions:
             mzn_proc.append("-a")
+
+        if args.time_limit:
+            mzn_proc.append("--time-limit")
+            mzn_proc.append(str(args.time_limit))
 
         my_env = os.environ.copy()
 
