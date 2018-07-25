@@ -203,14 +203,12 @@ def check_minizinc():
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (output, erroutput) = pipes.communicate()
         if pipes.returncode != 0:
-            print(
-                "Error while initialising extension: cannot run minizinc. Make sure it is on the PATH when you run "
-                "the Jupyter server.")
+            print("Error while initialising extension: cannot run minizinc. Make sure it is on the PATH when you run "
+                  "the Jupyter server.")
             return False
         print(output.rstrip().decode())
-    except OSError as e:
-        print(
-            "Error while initialising extension: cannot run minizinc. Make sure it is on the PATH when you run the "
-            "Jupyter server.")
+    except OSError as _:
+        print("Error while initialising extension: cannot run minizinc. Make sure it is on the PATH when you run the "
+              "Jupyter server.")
         return False
     return True
