@@ -187,7 +187,7 @@ class MznMagics(Magics):
     @cell_magic
     def mzn_model(self, line, cell):
         args = magic_arguments.parse_argstring(self.minizinc, line)
-        if args.model == []:
+        if not args.model:
             print("No model name provided")
             return
         elif len(args.model) > 1:
