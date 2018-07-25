@@ -10,10 +10,10 @@ from IPython.core.magic import (Magics, magics_class, cell_magic, line_cell_magi
 from IPython.utils.tempdir import TemporaryDirectory
 
 Solns2outArgs = [
-    "--unsat-msg", "",
+    "--unsat-msg", "% The problem is infeasible",
     "--unbounded-msg", "",
     "--unsatorunbnd-msg", "",
-    "--unknown-msg", "",
+    "--unknown-msg", "% No solution has been found",
     "--search-complete-msg", "",
     "--solution-comma", ",",
     "--soln-separator", ""
