@@ -197,7 +197,7 @@ class MznMagics(Magics):
         return
 
 
-def checkMzn():
+def check_minizinc():
     try:
         pipes = subprocess.Popen(["minizinc", "--version"],
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE)

@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from .mzn import MznMagics, checkMzn
+from .mzn import MznMagics, check_minizinc
 
 from IPython.core.display import display, HTML, Javascript
 from os import path
@@ -17,5 +17,5 @@ def load_ipython_extension(ipython):
     # You can register the class itself without instantiating it.  IPython will
     # call the default constructor on it.    
     display(Javascript(initHighlighter))
-    if checkMzn():
+    if check_minizinc():
         ipython.register_magics(MznMagics)
