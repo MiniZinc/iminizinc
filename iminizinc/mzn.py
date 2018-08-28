@@ -179,7 +179,8 @@ class MznMagics(Magics):
                             solution = solutions[-1]
                             for var in solution:
                                 self.shell.user_ns[var] = solution[var]
-                                print(var + "=" + str(solution[var]))
+                                if args.verbose:
+                                    print(var + "=" + str(solution[var]))
                     return
 
         # print("Full access to the main IPython object:", self.shell)
