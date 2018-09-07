@@ -7,7 +7,7 @@ with open(path.join(path.abspath(path.dirname(__file__)), 'README.rst'), encodin
 
 setup(
     name='iminizinc',
-    version='0.3',
+    version='0.4',
     description='IPython extensions for the MiniZinc constraint modelling language',
     long_description=long_description,
     author='Guido Tack',
